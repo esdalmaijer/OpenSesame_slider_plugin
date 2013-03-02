@@ -48,8 +48,8 @@ class slider(item.item):
 		self.item_type = "slider"
 		self.description = "Presents a question and slider"
 
-		self.question = "Put your question here"
-		self.accept_text = "Click to accept"
+		self._question = "Put your question here"
+		self._accept_text = "Click to accept"
 		self.slider_w = 800
 		self.slider_h = 10
 		self.txt_colour = 'white'
@@ -74,8 +74,8 @@ class slider(item.item):
 		self.canvas.clear()
 
 		# Draw the text 
-		self.canvas.text(self.get("question"), y=self.slider_y-100, color=self.get("txt_colour"))
-		self.canvas.text(self.get("accept_text"), y=self.slider_y+self.slider_h+50, color=self.get("txt_colour"))
+		self.canvas.text(self.get("_question"), y=self.slider_y-100, color=self.get("txt_colour"))
+		self.canvas.text(self.get("_accept_text"), y=self.slider_y+self.slider_h+50, color=self.get("txt_colour"))
 
 		# Draw the slider frame
 		self.canvas.set_fgcolor(self.get("fg_colour"))
@@ -164,8 +164,8 @@ class qtslider(slider, qtplugin.qtplugin):
 		self.add_color_edit_control("fg_colour", "Foreground colour", tooltip = "Expecting a colorname (e.g., 'blue') or an HTML color (e.g., '#0000FF')")
 		self.add_color_edit_control("sf_colour", "Slider filling colour", tooltip = "Expecting a colorname (e.g., 'blue') or an HTML color (e.g., '#0000FF')")
 		self.add_color_edit_control("bg_colour", "Background colour", tooltip = "Expecting a colorname (e.g., 'blue') or an HTML color (e.g., '#0000FF')")
-		self.add_line_edit_control("accept_text", "Text underneath the slider", tooltip = "The text that appears below slider")
-		self.add_editor_control("question", "Question", tooltip = "The question that you want to ask")
+		self.add_line_edit_control("_accept_text", "Text underneath the slider", tooltip = "The text that appears below slider")
+		self.add_editor_control("_question", "Question", tooltip = "The question that you want to ask")
 
 		self.lock = False
 
