@@ -15,9 +15,16 @@ You should have received a copy of the GNU General Public License
 along with opensesame.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+# commented out code:
+# Currently, qtplugin.add_filepool_control does not return anything.
+# Once this is fixed, code may be uncommented. This will introduce
+# a widget to browse for an image in the file pool, instead of the
+# current line_edit_control used to specify an image file.
+
 
 from libopensesame import item, exceptions
 from libqtopensesame import qtplugin
+#from libqtopensesame.widgets import pool_widget
 from openexp.canvas import canvas
 from openexp.mouse import mouse
 import os.path
@@ -43,19 +50,21 @@ class slider(item.item):
 		string -- definitional string (default = None)
 		"""
 
-		global path		
-
 		self.item_type = "slider"
 		self.description = "Presents a question and slider"
 
-		self._question = "Put your question here"
-		self._accept_text = "Click to accept"
+		self.question = "Put your question here"
+		self.accept_text = "Click to accept"
+		self.leftlabel = "Disagree"
+		self.rightlabel = "Agree"
 		self.slider_w = 800
 		self.slider_h = 10
-		self.txt_colour = 'white'
+		self.txt_colour = experiment.foreground
 		self.sf_colour = 'red'
-		self.fg_colour = 'white'
-		self.bg_colour = 'black'
+		self.fg_colour = experiment.foreground
+		self.bg_colour = experiment.background
+		self.show_img = 'no'
+		self.imgname = ''
 
 		# Pass the word on to the parent
 		item.item.__init__(self, name, experiment, string)
@@ -64,22 +73,32 @@ class slider(item.item):
 
 		"""Prepare the item"""
 
-		# Slider dimensions
-		self.slider_x = self.get("width")/2-self.slider_w/2
-		self.slider_y = self.get("height")/2-self.slider_h/2
+		# slider position
+		self.slider_x = self.get("width")/2-self.get("slider_w")/2
+		if self.get("show_img") == "no":
+			self.slider_y = self.get("height")/2-self.get("slider_h")/2
+		if self.get("show_img") == "yes":
+			self.slider_y = self.get("height")*0.75-self.get("slider_h")/2
 
 		# background colour
 		self.canvas = canvas(self.experiment)
 		self.canvas.set_bgcolor(self.get("bg_colour"))
 		self.canvas.clear()
 
-		# Draw the text 
-		self.canvas.text(self.get("_question"), y=self.slider_y-100, color=self.get("txt_colour"))
-		self.canvas.text(self.get("_accept_text"), y=self.slider_y+self.slider_h+50, color=self.get("txt_colour"))
+		# draw the text 
+		self.canvas.text(self.get("question"), y=self.slider_y-100, color=self.get("txt_colour"))
+		self.canvas.text(self.get("accept_text"), y=self.slider_y+self.slider_h+50, color=self.get("txt_colour"))
+		self.canvas.text(self.get("leftlabel"), center=True, x=self.get("width")/2-self.slider_w/2-self.canvas.text_size(self.get("leftlabel"))[0], y=self.slider_y)
+		self.canvas.text(self.get("rightlabel"), center=True, x=self.get("width")/2+self.slider_w/2+self.canvas.text_size(self.get("rightlabel"))[0], y=self.slider_y)
 
-		# Draw the slider frame
+		# draw the slider frame
 		self.canvas.set_fgcolor(self.get("fg_colour"))
 		self.canvas.rect(self.slider_x-1, self.slider_y-1, self.slider_w+2, self.slider_h+2)
+
+		# draw the image
+		if self.get("show_img") == "yes":
+			imgpath = self.experiment.get_file(self.get("imgname"))
+			self.canvas.image(imgpath, center=True, y=self.get("height")/4, scale=None)
 
 		# Pass the word on to the parent
 		item.item.prepare(self)
@@ -148,6 +167,16 @@ class qtslider(slider, qtplugin.qtplugin):
 		slider.__init__(self, name, experiment, string)
 		qtplugin.qtplugin.__init__(self, __file__)
 
+#	def browse_img(self):
+#
+#		"""Present a file dialog to browse for the image"""
+#	
+#		s = pool_widget.select_from_pool(self.experiment.main_window)
+#		if unicode(s) == "":
+#			return			
+#		self.imgname_control.setText(s)
+#		self.apply_edit_changes()
+
 	def init_edit_widget(self):
 
 		"""Build the edit controls"""
@@ -158,14 +187,20 @@ class qtslider(slider, qtplugin.qtplugin):
 		qtplugin.qtplugin.init_edit_widget(self, False)
 
 		# Content editor
-		self.add_spinbox_control("slider_width", "Slider width", 10, 1000, tooltip = "The width of the text area")
-		self.add_spinbox_control("slider_heigth", "Slider height", 0, 100, tooltip = "The height of the text area")		
+		self.add_spinbox_control("slider_w", "Slider width", 10, 1000, tooltip = "The width of the text area")
+		self.add_spinbox_control("slider_h", "Slider height", 0, 100, tooltip = "The height of the text area")		
 		self.add_color_edit_control("txt_colour", "Text colour", tooltip = "Expecting a colorname (e.g., 'blue') or an HTML color (e.g., '#0000FF')")
 		self.add_color_edit_control("fg_colour", "Foreground colour", tooltip = "Expecting a colorname (e.g., 'blue') or an HTML color (e.g., '#0000FF')")
 		self.add_color_edit_control("sf_colour", "Slider filling colour", tooltip = "Expecting a colorname (e.g., 'blue') or an HTML color (e.g., '#0000FF')")
 		self.add_color_edit_control("bg_colour", "Background colour", tooltip = "Expecting a colorname (e.g., 'blue') or an HTML color (e.g., '#0000FF')")
-		self.add_line_edit_control("_accept_text", "Text underneath the slider", tooltip = "The text that appears below slider")
-		self.add_editor_control("_question", "Question", tooltip = "The question that you want to ask")
+		self.add_line_edit_control("accept_text", "Text underneath the slider", tooltip = "The text that appears below slider")
+		self.llbl_line_edit_control = self.add_line_edit_control("leftlabel", "Left label", tooltip = "The text that appears left of slider")
+		self.rlbl_line_edit_control = self.add_line_edit_control("rightlabel", "Right label", tooltip = "The text that appears right of slider")
+		self.add_checkbox_control("show_img", "Show image", tooltip = "Indicate whether you want to show an image")
+#		self.imgname_control = self.add_filepool_control("imgname", "Image file", self.browse_img, tooltip = "The name of the image file")
+		self.imgname_control = self.add_line_edit_control("imgname", "Image file", tooltip = "The name of the image file")
+		self.add_text("NOTE: Image should not be bigger than %dx%d and of a .png image format \n" % (self.get("width"), self.get("height")/2))
+		self.add_editor_control("question", "Question", tooltip = "The question that you want to ask")
 
 		self.lock = False
 
@@ -183,6 +218,7 @@ class qtslider(slider, qtplugin.qtplugin):
 
 		self.lock = True
 		qtplugin.qtplugin.edit_widget(self)
+		self.imgname_control.setDisabled(self.get("show_img") == 'no')
 		self.lock = False
 		return self._edit_widget
 
